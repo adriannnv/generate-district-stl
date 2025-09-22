@@ -39,10 +39,12 @@ This command generates a model with a vertical exaggeration of 10 and a longest 
 
 ```sh
 python your_script_name.py data/districts.geojson data/elevation.tif -o output_models -e 10 -s 200 -c 32633
+I used https://www.mapsforeurope.org/datasets/euro-dem for a DEM of europe then found out that ESPG:4026 fits my country exactly (Moldova)
+my command looks like this.
+python3 script.py moldova_districts.geojson eurodem.tif -c 4026
+warning: it did turn a 1gb DEM (eurodem) to a temporary 41gb DEM. But hey it deletes itself after usage and works.
 ```
 
-I used https://www.mapsforeurope.org/datasets/euro-dem for a DEM of europe then found out that ESPG:4026 fits my country exactly (moldova)
-my command looks 
 -----
 
 ### Input Files
