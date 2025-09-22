@@ -6,7 +6,7 @@ This Python script generates 3D printable **STL files** of geographical district
 
 ### Requirements
 
-The script relies on some Python libraries. Install them via `pip`:
+The script relies on several Python libraries. Install them via `pip`:
 
 ```sh
 pip install geopandas rasterio numpy pyvista shapely
@@ -31,7 +31,7 @@ Customize the output with the following flags:
   * `-o, --output <folder_name>`: Specifies the output directory for the STL files. Defaults to `stl_districts`.
   * `-e, --exaggeration <factor>`: Sets the vertical exaggeration for terrain features. A higher value makes mountains appear taller. The default is `5`.
   * `-s, --scale <mm>`: Defines the target size of the model's longest side in millimeters. Defaults to `180`.
-  * `-c, --epsg <code_number>`: Reprojects input files to a specified EPSG coordinate system.
+  * `-c, --epsg <code_number>`: Reprojects input files to a specified EPSG coordinate system. This is crucial if your GeoJSON and DEM files use different systems. For example, use `4326` for WGS 84.
 
 **Example**
 
@@ -41,6 +41,8 @@ This command generates a model with a vertical exaggeration of 10 and a longest 
 python your_script_name.py data/districts.geojson data/elevation.tif -o output_models -e 10 -s 200 -c 32633
 ```
 
+I used https://www.mapsforeurope.org/datasets/euro-dem for a DEM of europe then found out that ESPG:4026 fits my country exactly (moldova)
+my command looks 
 -----
 
 ### Input Files
