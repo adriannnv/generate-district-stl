@@ -8,6 +8,7 @@ import numpy as np
 import pyvista as pv
 from shapely.geometry import mapping
 from rasterio.warp import calculate_default_transform, reproject, Resampling
+import subprocess
 
 def generate_stl_models(
 	districts_file: str,
@@ -20,20 +21,35 @@ def generate_stl_models(
 	# create folder for output, if exists, don't create
 	os.makedirs(output_folder, exist_ok=True)
 
-	# check coordonate reference system (crs) used by your DEM
-	with rasterio.open(dem_file) as src:
-		dem_crs = src.crs
-
-	# determine target crs
+	processed_dem_file = dem_file
 	if target_epsg is not None:
 		target_crs = f"EPSG:{target_epsg}"
-	else:
-		target_crs = dem_crs
+		
+		# Check DEM's current CRS
+		with rasterio.open(dem_file) as src:
+			dem_crs = src.crs
+		
+		if dem_crs.to_string() != target_crs:
+			print(f"Reprojecting DEM to {target_crs} using gdalwarp...")
+			
+			# Construct the gdalwarp command with variables
+			temp_dem_name = f"reprojected_dem_{target_epsg}.tif"
+			command = ["gdalwarp", "-t_srs", target_crs, dem_file, temp_dem_name]
+			
+			# Execute the command
+			try:
+				subprocess.run(command, check=True, capture_output=True, text=True)
+				processed_dem_file = temp_dem_name
+				print("Reprojection successful.")
+			except subprocess.CalledProcessError as e:
+				print(f"Error during gdalwarp execution: {e.stderr}")
+				return # Exit if reprojection fails
 
-	# load and reproject districts file to desired crs.
+	# Load and reproject districts file to desired crs.
 	gdf = gpd.read_file(districts_file)
-	gdf = gdf.to_crs(target_crs)
-
+	if target_epsg is not None:
+		target_crs = f"EPSG:{target_epsg}"
+		gdf = gdf.to_crs(target_crs)
 	# iterate over districts. main loop
 	for idx, row in gdf.iterrows():
 		# assigns name of district, tries finding column "shapeName", change if different.
@@ -42,7 +58,7 @@ def generate_stl_models(
 		geom = [mapping(row["geometry"])]
 
 		# open the DEM (digital elevation model)
-		with rasterio.open(dem_file) as src:
+		with rasterio.open(processed_dem_file) as src:
 			if target_epsg is not None and src.crs.to_string() != f"EPSG:{target_epsg}":
 				# crop DEM(src) to the boundaries of the districts geometry(geom).
 				out_image, out_transform = rasterio.mask.mask(
@@ -58,7 +74,7 @@ def generate_stl_models(
 					src_crs=src.crs,
 					dst_transform=out_transform,
 					dst_crs=dst_crs,
-					resampling=Resampling.nearest
+					resampling=Resampling.bilinear
 				)
 				arr = dst_array[0]
 			else: # no reprojection is needed.
@@ -91,6 +107,12 @@ def generate_stl_models(
 		stl_path = os.path.join(output_folder, f"{name}.stl")
 		mesh.save(stl_path)
 		print(f"Saved {stl_path}")
+
+		
+	 # clean up the temporary DEM file
+	if processed_dem_file != dem_file:
+		os.remove(processed_dem_file)
+		print(f"Removed temporary file: {processed_dem_file}")
 
 
 def parse_args():
