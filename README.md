@@ -6,7 +6,7 @@ This Python script generates 3D printable **STL files** of geographical district
 
 ### Requirements
 
-The script relies on several Python libraries. Install them via `pip`:
+The script relies on some Python libraries. Install them via `pip`:
 
 ```sh
 pip install geopandas rasterio numpy pyvista shapely
