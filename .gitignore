@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+myenv/
+*.tif
+*.geojson
