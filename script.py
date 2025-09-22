@@ -20,33 +20,37 @@ def generate_stl_models(
 	# create folder for output, if exists, don't create
 	os.makedirs(output_folder, exist_ok=True)
 
-	# open DEM
+	# check coordonate reference system (crs) used by your DEM
 	with rasterio.open(dem_file) as src:
 		dem_crs = src.crs
 
-	# determine target CRS
+	# determine target crs
 	if target_epsg is not None:
 		target_crs = f"EPSG:{target_epsg}"
 	else:
 		target_crs = dem_crs
 
-	# load and reproject districts
+	# load and reproject districts file to desired crs.
 	gdf = gpd.read_file(districts_file)
 	gdf = gdf.to_crs(target_crs)
 
-	# iterate over districts
+	# iterate over districts. main loop
 	for idx, row in gdf.iterrows():
+		# assigns name of district, tries finding column "shapeName", change if different.
 		name = row.get("shapeName", f"district_{idx}")
+		# convert from shapely object to dictionary.
 		geom = [mapping(row["geometry"])]
 
+		# open the DEM (digital elevation model)
 		with rasterio.open(dem_file) as src:
-			# mask and reproject DEM for this district
 			if target_epsg is not None and src.crs.to_string() != f"EPSG:{target_epsg}":
+				# crop DEM(src) to the boundaries of the districts geometry(geom).
 				out_image, out_transform = rasterio.mask.mask(
 					src, geom, crop=True, all_touched=True, nodata=src.nodata
 				)
 				dst_crs = f"EPSG:{target_epsg}"
 				dst_array = np.empty_like(out_image)
+
 				reproject(
 					source=out_image,
 					destination=dst_array,
@@ -57,19 +61,23 @@ def generate_stl_models(
 					resampling=Resampling.nearest
 				)
 				arr = dst_array[0]
-			else:
+			else: # no reprojection is needed.
 				out_image, _ = rasterio.mask.mask(src, geom, crop=True)
 				arr = out_image[0]
 
+		# find no data pixels and replace with NaN, then replace NaN with the lowest point of elevation.
 		arr = np.where(arr == src.nodata, np.nan, arr)
 		arr = np.nan_to_num(arr, nan=np.nanmin(arr))
 
 		# create mesh for this district
 		nrows, ncols = arr.shape
 		xres, yres = src.res
+		# create 2 2d arrays, x and y. they represent coords of each pixel in the grid.
 		X, Y = np.meshgrid(np.arange(ncols) * xres, np.arange(nrows) * yres)
+		# add vertical exageration.
 		Z = arr * vertical_exaggeration
 
+		# scaling. model is now in milimeters.
 		max_dim_m = max(ncols * xres, nrows * yres)
 		scale = target_size_mm / (max_dim_m * 1000.0)
 		X *= scale * 1000
@@ -77,6 +85,7 @@ def generate_stl_models(
 		Z *= scale * 1000
 
 		grid = pv.StructuredGrid(X, Y, Z)
+		# create triangle mesh
 		mesh = grid.extract_surface().triangulate()
 
 		stl_path = os.path.join(output_folder, f"{name}.stl")
