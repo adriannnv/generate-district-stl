@@ -31,7 +31,7 @@ Customize the output with the following flags:
   * `-o, --output <folder_name>`: Specifies the output directory for the STL files. Defaults to `stl_districts`.
   * `-e, --exaggeration <factor>`: Sets the vertical exaggeration for terrain features. A higher value makes mountains appear taller. The default is `5`.
   * `-s, --scale <mm>`: Defines the target size of the model's longest side in millimeters. Defaults to `180`.
-  * `-c, --epsg <code_number>`: Reprojects input files to a specified EPSG coordinate system. This is crucial if your GeoJSON and DEM files use different systems. For example, use `4326` for WGS 84.
+  * `-c, --epsg <code_number>`: Reprojects input files to a specified EPSG coordinate system.
 
 **Example**
 
