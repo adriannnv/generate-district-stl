@@ -103,9 +103,33 @@ def generate_stl_models(
 		grid = pv.StructuredGrid(X, Y, Z)
 		# create triangle mesh
 		mesh = grid.extract_surface().triangulate()
+		# --- add solid base ---
+		zmin = float(Z.min())
 
+		# Terrain surface
+		surface = mesh
+
+		# Extract boundary edges and extrude them down
+		edges = surface.extract_feature_edges(boundary_edges=True)
+		walls = edges.extrude((0, 0, zmin - surface.points[:, 2].min()))
+
+		# Flat base
+		base = pv.Plane(
+			center=((X.max() + X.min()) / 2, (Y.max() + Y.min()) / 2, zmin),
+			i_size=X.max() - X.min(),
+			j_size=Y.max() - Y.min(),
+			i_resolution=1,
+			j_resolution=1,
+		).triangulate()
+
+		# Merge into one closed solid
+		solid = surface.merge(walls).merge(base)
+		
+		# Path for STL
 		stl_path = os.path.join(output_folder, f"{name}.stl")
-		mesh.save(stl_path)
+
+		# Save solid STL
+		solid.save(stl_path)
 		print(f"Saved {stl_path}")
 
 		
