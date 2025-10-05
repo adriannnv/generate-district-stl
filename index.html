@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>3D Printable Terrain</title>
+</head>
+<body>
+	<h1>Generate STL using DEM + GeoJSON</h1>
+	<form id="form">
+		<input type="file" name="geojson"/><br/>
+		<input type="file" name="dem"/><br/>
+		<input type="number" name="exaggeration" value="10"><br/>
+		<button type="submit">Generate</button>
+	</form>
+	<script>
+		const form = document.getElementById("form");
+		
+		form.addEventListener("submit", async (e) => {
+			e.preventDefault(); // prevent form from reloading the page
+			
+			const formData = new FormData(form); // create variable with form data
+
+			// send data to backend server
+			const res = await fetch("https://127.0.0.1:800/generate", {
+				method: "POST",
+				body: formData
+			});
+		
+			const blob = await res.blob();
+			const url = window.URL.createObjectURL(blob);
+
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = "terrain.stl";
+			a.click();
+		});
+	</script>
+</body>	
+</html>
