@@ -22,7 +22,7 @@
 			const formData = new FormData(form); // create variable with form data
 
 			// send data to backend server
-			const res = await fetch("https://127.0.0.1:800/generate", {
+			const res = await fetch("/generate", {
 				method: "POST",
 				body: formData
 			});
@@ -32,7 +32,7 @@
 
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = "terrain.stl";
+			a.download = "terrain.zip";
 			a.click();
 		});
 	</script>
